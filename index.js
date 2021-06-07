@@ -28,13 +28,13 @@ bot.on("ready", () => {
   const userTable = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'player_data';").get();
 
   if (!userTable['count(*)']) {
-    sql.prepare("CREATE TABLE player_data (id TEXT PRIMARY KEY, coins INT, stats TEXT, unlocks TEXT);").run();
+    sql.prepare("CREATE TABLE player_data (id TEXT PRIMARY KEY, coins INT, stats TEXT);").run();
     sql.prepare("CREATE UNIQUE INDEX idx_scores_id ON player_data (id);").run();
     sql.pragma("synchronous = 1"); sql.pragma("journal_mode = wal");
   }
 
   bot.getData = sql.prepare("SELECT * FROM player_data WHERE id = ?");
-  bot.setData = sql.prepare("INSERT OR REPLACE INTO player_data (id, coins, stats, unlocks) VALUES (@id, @coins, @stats, @unlocks);");
+  bot.setData = sql.prepare("INSERT OR REPLACE INTO player_data (id, coins, stats) VALUES (@id, @coins, @stats);");
 
   console.log((`Gotchi up & running!`));
 });
@@ -57,12 +57,9 @@ bot.on("message", async message => {
           growth: 0,
           frame: 0,
           background: 0,
-          pet: 0
-        })),
-        unlocks: encodeURI(JSON.stringify({
-          frames: [0, 1, 2],
-          backgrounds: [0],
-          pets: [0]
+          pet: 0,
+          age: 0,
+          daily: 0
         }))
       }
     }

@@ -26,5 +26,19 @@
         "description": "Reset your pet back to an egg.",
         "cooldown": 360000,
         "category": "common"
+    },
+    {
+        "name": "leaderboard",
+        "short": "lb",
+        "description": "See the leaderboard for G.",
+        "cooldown": 10000,
+        "category": "common"
+    },
+    {
+        "name": "daily",
+        "short": "d",
+        "description": "Cash in your daily check.",
+        "cooldown": 10000,
+        "category": "common"
     }
 ]

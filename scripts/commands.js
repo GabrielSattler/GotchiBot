@@ -26,13 +26,16 @@ const getData = async id => {
 	const table = await sql.prepare("SELECT * FROM player_data WHERE id = ?").get(id);
 
 	let stats = await JSON.parse(decodeURI(table.stats));
-	let unlocks = await JSON.parse(decodeURI(table.unlocks));
+
+	if (!stats.daily) {
+		let pair = { daily: 0 }
+		stats = { ...stats, ...pair }
+	}
 
 	let response = {
 		id: table.id,
 		coins: table.coins,
-		stats: stats,
-		unlocks: unlocks
+		stats: stats
 	}
 
 	return response;
@@ -41,16 +44,14 @@ const getData = async id => {
 const setData = async (data) => {
 	data.coins = encodeURI(JSON.stringify(data.coins));
 	data.stats = encodeURI(JSON.stringify(data.stats));
-	data.unlocks = encodeURI(JSON.stringify(data.unlocks));
 
 	let table = {
 		id: data.id,
 		coins: data.coins,
-		stats: data.stats,
-		unlocks: data.unlocks
+		stats: data.stats
 	}
 
-	sql.prepare("INSERT OR REPLACE INTO player_data (id, coins, stats, unlocks) VALUES (@id, @coins, @stats, @unlocks);").run(table)
+	sql.prepare("INSERT OR REPLACE INTO player_data (id, coins, stats) VALUES (@id, @coins, @stats);").run(table)
 
 	return true;
 }
@@ -111,8 +112,6 @@ const walk = async (m, id) => {
 	let roll = await Random(0, walks.length - 1);
 	const walk = walks[roll];
 
-	console.log(`Hunger ${table.stats.hunger} Dirty ${table.stats.dirty} Growth ${table.stats.growth}`)
-
 	table.stats.dirty += await Random(1, 20);
 	if (table.stats.dirty > 100) table.stats.dirty = 100;
 
@@ -126,7 +125,7 @@ const walk = async (m, id) => {
 	let G = await Random(1, 11 - mult > 0 ? 11 - mult : 1);
 	table.coins += G;
 
-	console.log(`Hunger ${table.stats.hunger} Dirty ${table.stats.dirty} Growth ${table.stats.growth}`)
+	table.stats.age++;
 
 	await setData(table);
 
@@ -147,11 +146,12 @@ const stats = async (m, id) => {
 	const embed = new Discord.MessageEmbed()
 		.setTitle(`${m.author.username}'s pet stats`)
 		.addFields(
-			{ name: `Wallet`, value: `${table.coins}G`, inline: false },
+			{ name: `Wallet`, value: `${table.coins}G`, inline: true },
+			{ name: `Age`, value: `${table.stats.age}`, inline: false },
 			{ name: `Hunger`, value: `${table.stats.hunger}%`, inline: true },
-			{ name: `Cleanliness`, value: `${table.stats.dirty}%`, inline: true },
+			{ name: `Cleanliness`, value: `${table.stats.dirty}%`, inline: false },
 			{ name: `Growth`, value: `${table.stats.growth}%`, inline: true },
-			{ name: `Unhappiness`, value: `${table.stats.fun}%`, inline: true }
+			{ name: `Unhappiness`, value: `${table.stats.fun}%`, inline: false }
 		)
 
 	m.channel.send(`**${m.author.username}'s pet stats**`, { embed: embed })
@@ -423,12 +423,72 @@ module.exports = {
 	reset: async m => {
 		const table = await getData(m.author.id);
 
+		if (table.stats.pet == 0) {
+			m.channel.send(`${m.author.username} you can't reset if your pet hasn't hatched yet!`)
+			return;
+		}
+
 		table.stats.pet = 0;
 		table.stats.hunger = 0;
 		table.stats.dirt = 0;
+		table.coins += table.stats.age * 3;
 
 		m.channel.send(`${m.author.username} your pet has been reset.`)
 
 		setData(table);
+	},
+
+	leaderboard: async m => {
+		let tables = sql.prepare('SELECT * FROM player_data')
+		tables = tables.all();
+
+		let lb = [];
+
+		for (let i = 0; i < tables.length; i++) {
+			lb.push(
+				{
+					name: (await bot.client.users.fetch(tables[i].id)).username,
+					g: tables[i].coins
+				}
+			)
+		}
+
+		const embed = new Discord.MessageEmbed()
+			.setTitle(`G Leaderboard`)
+
+		lb.sort((a, b) => (a.g > b.g) ? -1 : 1);
+
+		let v = []
+		for (let i = 0; i < 5; i++) {
+			if (lb[i]) {
+				v.push({ name: `#${i + 1} ${lb[i].name}`, value: `${lb[i].g}G`, inline: false })
+			}
+		}
+
+		embed.addFields(v);
+
+		m.channel.send(`**${m.author.username}'s pet stats**`, { embed: embed })
+	},
+
+	daily: async msg => {
+		const table = await getData(msg.author.id);
+
+		if (!table) { return; }
+
+		let fecha = new Date();
+		fecha = `${fecha.getDate()}`
+
+		if (table.stats.daily == fecha) {
+			msg.channel.send(`${msg.author.username}, you've already cashed in your check for today.`);
+			return;
+		}
+
+		let g = await Random(50, 150);
+		table.coins += g;
+		table.stats.daily = `${fecha}`;
+
+		setData(table);
+
+		msg.channel.send(`${msg.author.username} claimed his daily check for ${g}G`)
 	}
 }
