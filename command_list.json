@@ -1,0 +1,30 @@
+[
+    {
+        "name": "help",
+        "short": "?",
+        "description": "See a list of all the commands available.",
+        "cooldown": 1000,
+        "category": "common"
+    },
+    {
+        "name": "view",
+        "short": "v",
+        "description": "Take a look at your pet.",
+        "cooldown": 5000,
+        "category": "common"
+    },
+    {
+        "name": "frame",
+        "short": "f",
+        "description": "Change the frame or background of your gotchi.",
+        "cooldown": 10000,
+        "category": "common"
+    },
+    {
+        "name": "reset",
+        "short": "r",
+        "description": "Reset your pet back to an egg.",
+        "cooldown": 360000,
+        "category": "common"
+    }
+]
