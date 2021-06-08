@@ -25,6 +25,7 @@ bot.on("ready", () => {
     }
   })
 
+  console.log(`Preparing DB`)
   const userTable = sql.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'player_data';").get();
 
   if (!userTable['count(*)']) {

@@ -303,7 +303,13 @@ module.exports = {
 			buttonRow.addComponent(_evolve)
 		}
 
-		let message = await m.channel.send(`**${m.author.username}'s Pet**`, { component: buttonRow, files: [attachment] });
+		const embed = new Discord.MessageEmbed()
+			.setTitle(`${m.author.username}'s Pet`)
+			.setDescription(`Your pet is ${table.stats.age} walks old.`)
+			.attachFiles(attachment)
+			.setImage('attachment://gotchi.png')
+
+		let message = await m.channel.send(`**${m.author.username}'s Pet**`, { component: buttonRow, embed: embed });
 
 		const filter = (button) => button.clicker.user.id === m.author.id;
 		const collector = message.createButtonCollector(filter, { time: 10 * 1000 });
@@ -438,36 +444,62 @@ module.exports = {
 		setData(table);
 	},
 
-	leaderboard: async m => {
+	leaderboard: async (m, arg) => {
+		arg[0] = arg[0] != null ? arg[0].toLowerCase() : null;
 		let tables = sql.prepare('SELECT * FROM player_data')
 		tables = tables.all();
 
-		let lb = [];
+		if (arg.length !== 0 && arg[0] == '')
+			return
 
-		for (let i = 0; i < tables.length; i++) {
-			lb.push(
-				{
+		let lb = [];
+		let v = []
+		const embed = new Discord.MessageEmbed()
+
+		if (arg[0] === 'g') {
+			for (let i = 0; i < tables.length; i++) {
+				lb.push({
 					name: (await bot.client.users.fetch(tables[i].id)).username,
 					g: tables[i].coins
+				})
+			}
+
+			embed.setTitle(`G Leaderboard`)
+
+			lb.sort((a, b) => (a.g > b.g) ? -1 : 1);
+
+			for (let i = 0; i < 5; i++) {
+				if (lb[i]) {
+					v.push({ name: `#${i + 1} ${lb[i].name}`, value: `${lb[i].g}G`, inline: false })
 				}
-			)
+			}
 		}
+		else if (arg[0] === 'age') {
 
-		const embed = new Discord.MessageEmbed()
-			.setTitle(`G Leaderboard`)
+			for (let i = 0; i < tables.length; i++) {
+				let stats = await JSON.parse(decodeURI(tables[i].stats));
+				lb.push({
+					name: (await bot.client.users.fetch(tables[i].id)).username,
+					age: stats.age
+				})
+			}
 
-		lb.sort((a, b) => (a.g > b.g) ? -1 : 1);
+			embed.setTitle(`Age Leaderboard`)
 
-		let v = []
-		for (let i = 0; i < 5; i++) {
-			if (lb[i]) {
-				v.push({ name: `#${i + 1} ${lb[i].name}`, value: `${lb[i].g}G`, inline: false })
+			lb.sort((a, b) => (a.age > b.age) ? -1 : 1);
+
+			console.log[lb[0]]
+
+			for (let i = 0; i < 5; i++) {
+				if (lb[i]) {
+					v.push({ name: `#${i + 1} ${lb[i].name}`, value: `${lb[i].age} walks`, inline: false })
+				}
 			}
 		}
 
 		embed.addFields(v);
 
-		m.channel.send(`**${m.author.username}'s pet stats**`, { embed: embed })
+		m.channel.send({ embed: embed })
 	},
 
 	daily: async msg => {
