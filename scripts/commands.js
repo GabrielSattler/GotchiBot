@@ -306,7 +306,7 @@ module.exports = {
 		let message = await m.channel.send(`**${m.author.username}'s Pet**`, { component: buttonRow, files: [attachment] });
 
 		const filter = (button) => button.clicker.user.id === m.author.id;
-		const collector = message.createButtonCollector(filter, { time: 5 * 1000 });
+		const collector = message.createButtonCollector(filter, { time: 10 * 1000 });
 
 		let willFeed = false;
 		let willClean = false;
